@@ -6,8 +6,6 @@
    }
 %}
 
-{# set formulas = salt['pillar.get']('salt_formulas:list', {}) #}
-
 {%- set formulas = {} %}
 {%- for env in salt['pillar.get']('salt_formulas:list', {}) -%}
 {%- set tmp_list = [] -%}
