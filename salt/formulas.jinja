@@ -5,7 +5,21 @@
     'options': {},
    }
 %}
-{% set formulas = salt['pillar.get']('salt_formulas:list', {}) %}
+
+{# set formulas = salt['pillar.get']('salt_formulas:list', {}) #}
+
+{%- set formulas = {} %}
+{%- for env in salt['pillar.get']('salt_formulas:list', {}) -%}
+{%- set tmp_list = [] -%}
+{%- for entry in salt['pillar.get']('salt_formulas:list:{0}'.format(env), {}) -%}
+{%- if entry is not string -%}
+{%- do tmp_list.append(entry.keys()[0]) -%}
+{%- else -%}
+{%- do tmp_list.append(entry) -%}
+{%- endif -%}
+{%- endfor -%}
+{%- do formulas.update({env: tmp_list}) -%}
+{%- endfor -%}
 
 {%- macro formulas_git_opt(env, opt) -%}
 {%- set value = salt['pillar.get']('salt_formulas:git_opts:{0}:{1}'.format(env, opt),
