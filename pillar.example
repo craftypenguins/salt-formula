@@ -15,7 +15,7 @@ salt:
   install_packages: True
 
   # Optional: set salt version (if install_packages is set to True)
-  version: 2017.7.2-1.el7
+  version: 2019.2.0+ds-1
 
   # to overwrite map.jinja salt packages
   lookup:
