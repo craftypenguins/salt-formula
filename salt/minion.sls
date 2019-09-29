@@ -1,22 +1,76 @@
-{% from "salt/map.jinja" import salt_settings with context %}
+{%- set tplroot = tpldir.split('/')[0] %}
+{%- from tplroot ~ "/map.jinja" import salt_settings with context %}
+{%- from tplroot ~ "/libtofs.jinja" import files_switch with context %}
 
-{% if grains.os != "MacOS" %}
+{% if salt_settings.install_packages and grains.os == 'MacOS' %}
+download-salt-minion:
+    {% if salt_settings.salt_minion_pkg_source %}
+        {# only download IF we know where to get the pkg from and what version to check the current install (if installed) against #}
+        {# e.g. don't download unless it appears as though we're about to try and upgrade the minion #}
+  file.managed:
+    - name: '/tmp/salt.pkg'
+    - source: {{ salt_settings.salt_minion_pkg_source }}
+    {%- if salt_settings.salt_minion_pkg_hash %}
+    - source_hash: {{ salt_settings.salt_minion_pkg_hash }}
+    {% else %}
+    - skip_verify: True
+    {% endif %}
+    - user: root
+    - group: wheel
+    - mode: 0644
+    - unless:
+      - test -n "{{ salt_settings.version }}" && '/opt/salt/bin/salt-minion --version=.*{{ salt_settings.version }}.*'
+    - require_in:
+      - macpackage: salt-minion
+   {%- elif "workaround https://github.com/saltstack/salt/issues/49348" %}
+  cmd.run:
+    - name: /usr/local/bin/brew install {{ salt_settings.salt_minion }}
+    - onlyif: test -x /usr/local/bin/brew
+    - runas: {{ salt_settings.rootuser }}
+   {%- endif %}
+{% endif %}
+
 salt-minion:
 {% if salt_settings.install_packages %}
+  {%- if grains.os == 'MacOS' and salt_settings.salt_minion_pkg_source %}
+  macpackage.installed:
+    - name: '/tmp/salt.pkg'
+    - target: /
+    {# macpackage.installed behaves weirdly with version_check; version_check detects difference but fails to actually complete install. #}
+    {# use force == True as workaround #}
+    - force: True
+    - unless:
+      - test -n "{{ salt_settings.version }}" && '/opt/salt/bin/salt-minion --version=.*{{ salt_settings.version }}.*'
+    - require_in:
+      - service: salt-minion
+    - onchanges_in:
+      - cmd: remove-macpackage-salt
+  {%- elif grains.os != 'MacOS' and "workaround https://github.com/saltstack/salt/issues/49348" %}
   pkg.installed:
     - name: {{ salt_settings.salt_minion }}
-  {%- if salt_settings.version is defined %}
+  {%- if salt_settings.version %}
     - version: {{ salt_settings.version }}
+  {%- endif %}
+    - require_in:
+      - service: salt-minion
   {%- endif %}
 {% endif %}
   file.recurse:
     - name: {{ salt_settings.config_path }}/minion.d
+    {%- if salt_settings.minion_config_use_TOFS %}
+    - template: ''
+    - source: {{ files_switch(['minion.d'],
+                              lookup='salt-minion'
+                 )
+              }}
+    {%- else %}
     - template: jinja
     - source: salt://{{ slspath }}/files/minion.d
-    - clean: {{ salt_settings.clean_config_d_dir }}
-    - exclude_pat: _*
     - context:
         standalone: False
+    {%- endif %}
+    - clean: {{ salt_settings.clean_config_d_dir }}
+    - exclude_pat: _*
   service.running:
     - enable: True
     - name: {{ salt_settings.minion_service }}
@@ -24,7 +78,7 @@ salt-minion:
       - file: salt-minion
 {%- if not salt_settings.restart_via_at %}
   cmd.run:
-  {%- if grains['saltversioninfo'][0] >= 2016 and grains['saltversioninfo'][1] >= 3 %}
+  {%- if grains['saltversioninfo'] >= [ 2016, 3 ] %}
     {%- if grains['kernel'] == 'Windows' %}
     - name: 'salt-call.bat --local service.restart {{ salt_settings.minion_service }}'
     {%- else %}
@@ -45,23 +99,39 @@ salt-minion:
   {%- endif %}
     - onchanges:
   {%- if salt_settings.install_packages %}
+    {%- if grains.os == 'MacOS' and salt_settings.salt_minion_pkg_source %}
+      - macpackage: salt-minion
+    {%- elif grains.os == 'MacOS' %}
+      - cmd: download-salt-minion
+    {%- else %}
       - pkg: salt-minion
+    {%- endif %}
   {%- endif %}
       - file: salt-minion
       - file: remove-old-minion-conf-file
 {%- else %}
+
+  {% if grains.os != 'MacOS' %}
+  {# MacOS has 'at' command; but there's no package to install #}
 at:
   pkg.installed: []
+  {% endif %}
 
 restart-salt-minion:
   cmd.run:
-    - name: echo salt-call --local service.restart salt-minion | at now + 1 minute
+    - name: echo salt-call --local service.restart {{ salt_settings.minion_service }} | at now + 1 minute
     - order: last
     - require:
         - pkg: at
     - onchanges:
   {%- if salt_settings.install_packages %}
+    {%- if grains.os == 'MacOS' and salt_settings.salt_minion_pkg_source %}
+      - macpackage: salt-minion
+    {%- elif grains.os == 'MacOS' %}
+      - cmd: download-salt-minion
+    {%- else %}
       - pkg: salt-minion
+    {%- endif %}
   {%- endif %}
       - file: salt-minion
       - file: remove-old-minion-conf-file
@@ -88,4 +158,9 @@ remove-old-minion-conf-file:
   file.absent:
     - name: {{ salt_settings.config_path }}/minion.d/_defaults.conf
 
+{% if grains.os == 'MacOS' %}
+remove-macpackage-salt:
+  file.absent:
+    - name: /tmp/salt.pkg
+    - force: True
 {% endif %}

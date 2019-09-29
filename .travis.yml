@@ -1,0 +1,85 @@
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
+---
+dist: bionic
+stages:
+  - test
+  - lint
+  - name: release
+    if: branch = master AND type != pull_request
+
+sudo: required
+cache: bundler
+language: ruby
+
+services:
+  - docker
+
+# Make sure the instances listed below match up with
+# the `platforms` defined in `kitchen.yml`
+env:
+  matrix:
+    # The ordering used below has been selected based on the time required in Travis
+    # The slower ones are kept as high up as possible, to run concurrently rather than
+    # slow down the entire run at the end (i.e. `centos-6` and `opensuse`)
+    # However, the groupings needed to be maintained in some semblance of order
+    # so this is a best-effort matrix, in the circumstances
+    # - INSTANCE: v201707-py2-debian-8-2017-7-py2
+    - INSTANCE: v201707-py2-ubuntu-1604-2017-7-py2
+    - INSTANCE: v201707-py2-centos-6-2017-7-py2
+    # - INSTANCE: v201707-py2-amazonlinux-2-2017-7-py2
+    # - INSTANCE: v201803-py2-debian-9-2018-3-py2
+    # - INSTANCE: v201803-py2-ubuntu-1604-2018-3-py2
+    - INSTANCE: v201803-py2-centos-7-2018-3-py2
+    - INSTANCE: v201803-py2-amazonlinux-2-2018-3-py2
+    - INSTANCE: v201902-py2-debian-9-2019-2-py2
+    - INSTANCE: v201902-py2-ubuntu-1804-2019-2-py2
+    # - INSTANCE: v201902-py2-centos-7-2019-2-py2
+    # - INSTANCE: v201902-py2-opensuse-leap-15-2019-2-py2
+    # - INSTANCE: v201902-py2-amazonlinux-2-2019-2-py2
+    # - INSTANCE: v201902-py3-debian-9-2019-2-py3
+    # - INSTANCE: v201902-py3-ubuntu-1804-2019-2-py3
+    # - INSTANCE: v201902-py3-centos-7-2019-2-py3
+    - INSTANCE: v201902-py3-fedora-30-2019-2-py3
+    - INSTANCE: v201902-py3-opensuse-leap-15-2019-2-py3
+
+script:
+  - bin/kitchen verify ${INSTANCE}
+
+jobs:
+  include:
+    # Define the `lint` stage (runs `yamllint` and `commitlint`)
+    - stage: lint
+      language: node_js
+      node_js: lts/*
+      before_install: skip
+      script:
+        # Install and run `yamllint`
+        # Need at least `v1.17.0` for the `yaml-files` setting
+        - pip install --user yamllint>=1.17.0
+        - yamllint -s .
+        # Install and run `commitlint`
+        - npm install @commitlint/config-conventional -D
+        - npm install @commitlint/travis-cli -D
+        - commitlint-travis
+    # Define the release stage that runs `semantic-release`
+    - stage: release
+      language: node_js
+      node_js: lts/*
+      before_install: skip
+      script:
+        # Update `AUTHORS.md`
+        - export MAINTAINER_TOKEN=${GH_TOKEN}
+        - go get github.com/myii/maintainer
+        - maintainer contributor
+
+        # Install all dependencies required for `semantic-release`
+        - npm install @semantic-release/changelog@3 -D
+        - npm install @semantic-release/exec@3 -D
+        - npm install @semantic-release/git@7 -D
+      deploy:
+        provider: script
+        skip_cleanup: true
+        script:
+          # Run `semantic-release`
+          - npx semantic-release@15
