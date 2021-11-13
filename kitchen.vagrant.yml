@@ -7,30 +7,50 @@ driver:
   customize:
     usbxhci: 'off'
   gui: false
-  linked_clone: true
   ssh:
     shell: /bin/sh
+  <% unless ENV['CI'] %>
+  linked_clone: true
+  synced_folders:
+    - - '.kitchen/kitchen-vagrant/%{instance_name}/vagrant'
+      - '/vagrant'
+      - 'create: true, disabled: false'
+  <% end %>
 
 platforms:
-  - name: freebsd-122-latest-py3
+  - name: freebsd-130-master-py3
     driver:
-      box: bento/freebsd-12.2
-  - name: freebsd-114-latest-py3
+      box: myii/freebsd-13.0-master-py3
+      synced_folders: []  # https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=255208
+  - name: freebsd-122-master-py3
     driver:
-      box: bento/freebsd-11.4
-  - name: openbsd-68-latest-py3
+      box: myii/freebsd-12.2-master-py3
+  - name: freebsd-130-3003-1-py3
     driver:
-      box: generic/openbsd6
+      box: myii/freebsd-13.0-3003.1-py3
+      synced_folders: []  # https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=255208
+  - name: freebsd-122-3003-1-py3
+    driver:
+      box: myii/freebsd-12.2-3003.1-py3
+  - name: openbsd-69-3002-6-py3
+    driver:
+      box: myii/openbsd-6.9-3002.6-py3
       ssh:
         shell: /bin/ksh
-  - name: windows-81-latest-py3
+      synced_folders: []
+  - name: openbsd-68-3001-1-py3
     driver:
-      box: techneg/win81x64-pro-salt
+      box: myii/openbsd-6.8-3001.1-py3
+      ssh:
+        shell: /bin/ksh
+      synced_folders: []
+  - name: windows-10-latest-py3
+    driver:
+      box: techneg/win10x64-pro-salt
       cache_directory: "/omnibus/cache"
       customize: {}
       ssh: {}
     provisioner:
-      salt_install: none
       # yamllint disable rule:line-length
       init_environment: |
         # Workaround to allow `kitchen converge` to be used multiple times
@@ -45,6 +65,24 @@ platforms:
           skip_verify=True makedirs=True
         exit 0
       # yamllint enable rule:line-length
-
-provisioner:
-  salt_install: bootstrap
+  - name: windows-81-latest-py3
+    driver:
+      box: techneg/win81x64-pro-salt
+      cache_directory: "/omnibus/cache"
+      customize: {}
+      ssh: {}
+    provisioner:
+      # yamllint disable rule:line-length
+      init_environment: |
+        # Workaround to allow `kitchen converge` to be used multiple times
+        # without having to `kitchen destroy` first: remove state files cached by
+        # Salt during the previous `converge` (if present)
+        rm -recurse `
+          C:\Users\vagrant\AppData\Local\Temp\kitchen\var\cache\salt\minion\files\base `
+          -ErrorAction SilentlyContinue
+        salt-call --local state.single file.managed `
+          C:\Users\vagrant\AppData\Local\Temp\kitchen\srv\salt\win\repo-ng\salt-minion-py3.sls `
+          source=https://github.com/saltstack/salt-winrepo-ng/raw/master/salt-minion-py3.sls `
+          skip_verify=True makedirs=True
+        exit 0
+      # yamllint enable rule:line-length

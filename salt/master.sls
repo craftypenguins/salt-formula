@@ -27,9 +27,6 @@ salt-master:
        {%- if salt_settings.version is defined %}
     - version: {{ salt_settings.version }}
        {%- endif %}
-    {%- if grains.os_family == 'FreeBSD' %}
-    - unless: pkg info | grep {{ salt_settings.salt_master }}
-    {%- endif %}
        {% if salt_settings.master_service_details.state != 'ignore' %}
     - require_in:
       - service: salt-master
@@ -50,11 +47,16 @@ salt-master:
     - source: salt://{{ tplroot }}/files/master.d
     {%- endif %}
     - clean: {{ salt_settings.clean_config_d_dir }}
-    - exclude_pat: _*
+    - exclude_pat:
+      - _*
+      - raas.conf
     {% if salt_settings.master_service_details.state != 'ignore' %}
   service.{{ salt_settings.master_service_details.state }}:
     - enable: {{ salt_settings.master_service_details.enabled }}
     - name: {{ salt_settings.master_service }}
+    {%- if grains.os_family == 'FreeBSD' %}
+    - retry: {{ salt_settings.retry_options | json }}
+    {%- endif %}
     - watch:
            {%- if grains.kernel|lower == 'darwin' %}
       - file: salt-master-macos
