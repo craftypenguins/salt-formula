@@ -1,6 +1,15 @@
 # -*- coding: utf-8 -*-
 # vim: ft=yaml
 ---
+################################################################################
+# NOTE: This file is UNMAINTAINED; it is provided for references purposes only.
+#       No guarantees are tendered that this structure will work after 2020.
+################################################################################
+# * https://en.wikipedia.org/wiki/Travis_CI:
+#   - "... free open-source plans were removed in [sic] the end of 2020"
+#   - https://blog.travis-ci.com/2020-11-02-travis-ci-new-billing
+#   - https://ropensci.org/technotes/2020/11/19/moving-away-travis/
+################################################################################
 ## Machine config
 os: 'linux'
 arch: 'amd64'
@@ -22,8 +31,10 @@ script:
 ## Stages and jobs matrix
 stages:
   - test
-  - name: 'release'
-    if: 'branch = master AND type != pull_request'
+  # # As part of the switch away from Travis CI, ensure that the `release` stage
+  # # is not run inadvertently
+  # - name: 'release'
+  #   if: 'branch = master AND type != pull_request'
 jobs:
   include:
     ## Define the test stage that runs the linters (and testing matrix, if applicable)
@@ -72,45 +83,69 @@ jobs:
     ## Define the rest of the matrix based on Kitchen testing
     # Make sure the instances listed below match up with
     # the `platforms` defined in `kitchen.yml`
-    - env: INSTANCE=v3001-py3-debian-10-3001-py3
-    # - env: INSTANCE=v3001-py3-debian-9-3001-py3
-    - env: INSTANCE=v3001-py3-ubuntu-2004-3001-py3
-    # - env: INSTANCE=v3001-py3-ubuntu-1804-3001-py3
-    - env: INSTANCE=v3001-py3-centos-8-3001-py3
-    # - env: INSTANCE=v3001-py3-centos-7-3001-py3
-    - env: INSTANCE=v3001-py3-fedora-32-3001-py3
-    # - env: INSTANCE=v3001-py3-fedora-31-3001-py3
-    # - env: INSTANCE=v3001-py3-opensuse-leap-152-3001-py3
-    # - env: INSTANCE=v3001-py3-amazonlinux-2-3001-py3
-    - env: INSTANCE=v3001-py3-oraclelinux-8-3001-py3
-    # - env: INSTANCE=v3001-py3-oraclelinux-7-3001-py3
-    - env: INSTANCE=v3001-py3-gentoo-stage3-latest-3001-py3
-    - env: INSTANCE=v3001-py3-gentoo-stage3-systemd-3001-py3
-    # - env: INSTANCE=v3000-py3-debian-10-3000-3-py3
-    # - env: INSTANCE=v3000-py3-debian-9-3000-3-py3
-    # - env: INSTANCE=v3000-py3-ubuntu-1804-3000-3-py3
-    # - env: INSTANCE=v3000-py3-centos-8-3000-3-py3
-    # - env: INSTANCE=v3000-py3-centos-7-3000-3-py3
-    - env: INSTANCE=v3000-py3-fedora-31-3000-3-py3
-    - env: INSTANCE=v3000-py3-opensuse-leap-152-3000-3-py3
-    - env: INSTANCE=v3000-py3-amazonlinux-2-3000-3-py3
-    # - env: INSTANCE=v3000-py3-oraclelinux-8-3000-3-py3
-    - env: INSTANCE=v3000-py3-oraclelinux-7-3000-3-py3
-    - env: INSTANCE=v3000-py2-ubuntu-1804-3000-3-py2
-    # - env: INSTANCE=v3000-py2-ubuntu-1604-3000-3-py2
-    # - env: INSTANCE=v3000-py3-gentoo-stage3-latest-3000-3-py3
-    # - env: INSTANCE=v3000-py3-gentoo-stage3-systemd-3000-3-py3
-    # - env: INSTANCE=v201902-py3-debian-10-2019-2-py3
-    - env: INSTANCE=v201902-py3-debian-9-2019-2-py3
-    # - env: INSTANCE=v201902-py3-ubuntu-1804-2019-2-py3
-    - env: INSTANCE=v201902-py3-ubuntu-1604-2019-2-py3
-    # - env: INSTANCE=v201902-py3-centos-8-2019-2-py3
-    - env: INSTANCE=v201902-py3-centos-7-2019-2-py3
-    # - env: INSTANCE=v201902-py3-fedora-31-2019-2-py3
-    # - env: INSTANCE=v201902-py3-opensuse-leap-152-2019-2-py3
-    # - env: INSTANCE=v201902-py3-amazonlinux-2-2019-2-py3
-    - env: INSTANCE=v201902-py2-centos-6-2019-2-py2
-    # - env: INSTANCE=v201902-py2-amazonlinux-1-2019-2-py2
+    # - env: INSTANCE=default-debian-11-tiamat-py3
+    # - env: INSTANCE=default-debian-10-tiamat-py3
+    # - env: INSTANCE=default-debian-9-tiamat-py3
+    # - env: INSTANCE=default-ubuntu-2204-tiamat-py3
+    # - env: INSTANCE=default-ubuntu-2004-tiamat-py3
+    # - env: INSTANCE=default-ubuntu-1804-tiamat-py3
+    # - env: INSTANCE=default-centos-stream8-tiamat-py3
+    # - env: INSTANCE=default-centos-7-tiamat-py3
+    # - env: INSTANCE=default-amazonlinux-2-tiamat-py3
+    # - env: INSTANCE=default-oraclelinux-8-tiamat-py3
+    # - env: INSTANCE=default-oraclelinux-7-tiamat-py3
+    # - env: INSTANCE=default-almalinux-8-tiamat-py3
+    # - env: INSTANCE=default-rockylinux-8-tiamat-py3
+    # - env: INSTANCE=default-debian-11-master-py3
+    # - env: INSTANCE=default-debian-10-master-py3
+    # - env: INSTANCE=default-debian-9-master-py3
+    # - env: INSTANCE=default-ubuntu-2204-master-py3
+    # - env: INSTANCE=default-ubuntu-2004-master-py3
+    # - env: INSTANCE=default-ubuntu-1804-master-py3
+    # - env: INSTANCE=default-centos-stream8-master-py3
+    # - env: INSTANCE=default-centos-7-master-py3
+    # - env: INSTANCE=default-fedora-36-master-py3
+    # - env: INSTANCE=default-fedora-35-master-py3
+    # - env: INSTANCE=default-opensuse-leap-153-master-py3
+    # - env: INSTANCE=default-opensuse-tmbl-latest-master-py3
+    # - env: INSTANCE=default-amazonlinux-2-master-py3
+    # - env: INSTANCE=default-oraclelinux-8-master-py3
+    # - env: INSTANCE=default-oraclelinux-7-master-py3
+    # - env: INSTANCE=default-arch-base-latest-master-py3
+    # - env: INSTANCE=default-gentoo-stage3-latest-master-py3
+    # - env: INSTANCE=default-gentoo-stage3-systemd-master-py3
+    # - env: INSTANCE=default-almalinux-8-master-py3
+    # - env: INSTANCE=default-rockylinux-8-master-py3
+    - env: INSTANCE=default-debian-11-3004-1-py3
+    # - env: INSTANCE=default-debian-10-3004-1-py3
+    # - env: INSTANCE=default-debian-9-3004-1-py3
+    - env: INSTANCE=default-ubuntu-2204-3004-1-py3
+    - env: INSTANCE=default-ubuntu-2004-3004-1-py3
+    # - env: INSTANCE=default-ubuntu-1804-3004-1-py3
+    - env: INSTANCE=default-centos-stream8-3004-1-py3
+    # - env: INSTANCE=default-centos-7-3004-1-py3
+    - env: INSTANCE=default-fedora-36-3004-1-py3
+    - env: INSTANCE=default-fedora-35-3004-1-py3
+    - env: INSTANCE=default-amazonlinux-2-3004-1-py3
+    - env: INSTANCE=default-oraclelinux-8-3004-1-py3
+    # - env: INSTANCE=default-oraclelinux-7-3004-1-py3
+    - env: INSTANCE=default-arch-base-latest-3004-1-py3
+    - env: INSTANCE=default-gentoo-stage3-latest-3004-1-py3
+    - env: INSTANCE=default-gentoo-stage3-systemd-3004-1-py3
+    - env: INSTANCE=default-almalinux-8-3004-1-py3
+    - env: INSTANCE=default-rockylinux-8-3004-1-py3
+    - env: INSTANCE=default-opensuse-leap-153-3004-0-py3
+    - env: INSTANCE=default-opensuse-tmbl-latest-3004-0-py3
+    - env: INSTANCE=default-debian-10-3003-4-py3
+    - env: INSTANCE=default-debian-9-3003-4-py3
+    # - env: INSTANCE=default-ubuntu-2004-3003-4-py3
+    - env: INSTANCE=default-ubuntu-1804-3003-4-py3
+    # - env: INSTANCE=default-centos-stream8-3003-4-py3
+    - env: INSTANCE=default-centos-7-3003-4-py3
+    # - env: INSTANCE=default-amazonlinux-2-3003-4-py3
+    # - env: INSTANCE=default-oraclelinux-8-3003-4-py3
+    - env: INSTANCE=default-oraclelinux-7-3003-4-py3
+    # - env: INSTANCE=default-almalinux-8-3003-4-py3
 
     ## Define the release stage that runs `semantic-release`
     - stage: 'release'

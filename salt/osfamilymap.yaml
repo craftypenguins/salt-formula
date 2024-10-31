@@ -12,20 +12,22 @@
 {%- set osfamily_lower =  salt['grains.get']('os_family')|lower %}
 {%- set osmajorrelease = salt['grains.get']('osmajorrelease', osrelease)|string %}
 {%- set oscodename = salt['grains.get']('oscodename') %}
-{%- set suse_testing_repo = ':/products:/next:/testing' if [osfamily_lower, osrelease] == ['suse', '15.2'] else '' %}
+{%- set opensuse_repo_suffix = 'Leap_' ~ osrelease if salt['grains.get']('osfinger', '') == 'Leap-15' else 'Tumbleweed' %}
+{%- set salt_repo = salt['pillar.get']('salt:repo', 'https://repo.saltproject.io') %}
 
 #from template-formula
 {%- if grains.os_family == 'MacOS' %}
 {%-   set rootuser = salt['cmd.run']("stat -f '%Su' /dev/console") %}
 {%-   set rootgroup = salt['cmd.run']("stat -f '%Sg' /dev/console") %}
 {%- elif grains.os_family == 'Windows' %}
-{%-   set rootuser = salt['cmd.run']("id -un") %}
+{%-   set rootuser = salt['cmd.run']("whoami").split("\\")[1] %}
 {%- endif %}
 
 
 Debian:
-  pkgrepo: 'deb http://repo.saltstack.com/{{ py_ver_repr or 'apt' }}/{{ osfamily_lower }}/{{ osmajorrelease }}/amd64/{{ salt_release }} {{ oscodename }} main'
-  key_url: 'https://repo.saltstack.com/{{ py_ver_repr or 'apt' }}/{{ osfamily_lower }}/{{ osmajorrelease }}/amd64/{{ salt_release }}/SALTSTACK-GPG-KEY.pub'
+  pkgrepo: 'deb [signed-by=/usr/share/keyrings/salt-archive-keyring.gpg arch=amd64] {{ salt_repo }}/{{ py_ver_repr or 'py3' }}/{{ osfamily_lower }}/{{ osmajorrelease }}/amd64/{{ salt_release }} {{ oscodename }} main'
+  pkgrepo_keyring: '{{ salt_repo }}/{{ py_ver_repr or 'py3' }}/{{ osfamily_lower }}/{{ osmajorrelease }}/amd64/{{ salt_release }}/salt-archive-keyring.gpg'
+  pkgrepo_keyring_hash: sha256=ea38e0cdbd8dc53e1af154a8d711a2a321a69f81188062dc5cde9d54df2b8c47
   libgit2: libgit2-22
   pyinotify: python-pyinotify
   gitfs:
@@ -41,8 +43,8 @@ Debian:
 RedHat:
   pkgrepo_name: saltstack
   pkgrepo_humanname: SaltStack repo for RHEL/CentOS $releasever
-  pkgrepo: 'https://repo.saltstack.com/{{ py_ver_repr or 'yum' }}/redhat/$releasever/$basearch/{{ salt_release }}'
-  key_url: 'https://repo.saltstack.com/{{ py_ver_repr or 'yum' }}/redhat/$releasever/$basearch/{{ salt_release }}/SALTSTACK-GPG-KEY.pub'
+  pkgrepo: '{{ salt_repo }}/{{ py_ver_repr or 'yum' }}/redhat/$releasever/$basearch/{{ salt_release }}'
+  key_url: '{{ salt_repo }}/{{ py_ver_repr or 'yum' }}/redhat/$releasever/$basearch/{{ salt_release }}/SALTSTACK-GPG-KEY.pub'
   pygit2: python-pygit2
   python_git: GitPython
   gitfs:
@@ -57,9 +59,9 @@ RedHat:
     gitfs_provider: pygit2
 
 Suse:
-  pkgrepo_humanname: 'Salt releases for SLE-based SUSE products (openSUSE_Leap_{{ osrelease }})'
-  pkgrepo: 'https://download.opensuse.org/repositories/systemsmanagement:/saltstack{{ suse_testing_repo }}/openSUSE_Leap_{{ osrelease }}/'
-  key_url: 'https://download.opensuse.org/repositories/systemsmanagement:/saltstack{{ suse_testing_repo }}/openSUSE_Leap_{{ osrelease }}/repodata/repomd.xml.key'
+  pkgrepo_humanname: 'Salt releases for SLE-based SUSE products (openSUSE_{{ opensuse_repo_suffix }})'
+  pkgrepo: 'https://download.opensuse.org/repositories/systemsmanagement:/saltstack/openSUSE_{{ opensuse_repo_suffix }}/'
+  key_url: 'https://download.opensuse.org/repositories/systemsmanagement:/saltstack/openSUSE_{{ opensuse_repo_suffix }}/repodata/repomd.xml.key'
   pygit2: python-pygit2
   pyinotify: python-pyinotify
   gitfs:
@@ -136,6 +138,7 @@ Windows:
   rootuser: {{ rootuser | d('') }}
 
 MacOS:
+  salt_master: saltstack
   salt_minion: salt
   salt_minion_pkg_source: ''
   salt_minion_pkg_hash: ''
