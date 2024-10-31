@@ -126,12 +126,17 @@ Undo the effects of ``salt.pkgrepo`` on Debian, RedHat, and SuSE.
 
 Clone selected `Salt formulas
 <http://docs.saltstack.com/en/latest/topics/development/conventions/formulas.html>`_
-Git repositories under ``/srv/formulas`` and makes them available in the
-relevant ``file_roots`` settings. Pillar data can be used to customize all
-paths, URLs, etc.
+Git repositories under ``/srv/formulas`` and makes them available in the relevant ``file_roots`` settings. Please note that in order for ``file_roots`` to be updated, ``salt.master`` must be called after ``salt.formulas``. For example:
 
-Here's a minimal pillar sample installing two formulas in the base
-environment.
+::
+
+    base:
+      'saltmain':
+        - salt.formulas
+        - salt.master
+    
+
+Pillar data can be used to customize all paths, URLs, etc. Here's a minimal pillar sample installing two formulas in the base environment:
 
 ::
 
@@ -199,7 +204,7 @@ salt-minion packages on MacOS will not be upgraded by default. To enable package
 
     install_packages: True
     version: 2017.7.4
-    salt_minion_pkg_source: https://repo.saltstack.com/osx/salt-2017.7.4-py3-x86_64.pkg
+    salt_minion_pkg_source: https://repo.saltproject.io/osx/salt-2017.7.4-py3-x86_64.pkg
 
 install_packages must indicate that the installation of a package is desired. If so, version will be used to compare the version of the installed .pkg against the downloaded one. If version is not set and a salt.pkg is already installed the .pkg will not be installed again.
 
@@ -255,7 +260,7 @@ Gives you SSH access to the instance for manual testing.
 Testing with Vagrant
 --------------------
 
-Windows testing is done with ``kitchen-salt``.
+Windows/FreeBSD/OpenBSD testing is done with ``kitchen-salt``.
 
 Requirements
 ^^^^^^^^^^^^
@@ -273,8 +278,8 @@ Setup
    $ bundle install --with=vagrant
    $ bin/kitchen test [platform]
 
-Where ``[platform]`` is the platform name defined in ``kitchen.yml``,
-e.g. ``windows``.
+Where ``[platform]`` is the platform name defined in ``kitchen.vagrant.yml``,
+e.g. ``windows-81-latest-py3``.
 
 Note
 ^^^^
@@ -292,7 +297,7 @@ Then run the following commands as needed.
 ``bin/kitchen converge``
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Creates the Vagrant instance and runs the ``salt.minion`` main state, ready for testing.
+Creates the Vagrant instance and runs the ``salt`` main states, ready for testing.
 
 ``bin/kitchen verify``
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -312,4 +317,4 @@ Runs all of the stages above in one go: i.e. ``destroy`` + ``converge`` + ``veri
 ``bin/kitchen login``
 ^^^^^^^^^^^^^^^^^^^^^
 
-Gives you RDP access to the instance for manual testing.
+Gives you RDP/SSH access to the instance for manual testing.

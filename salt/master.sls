@@ -15,11 +15,7 @@ salt-master-macos:
     - name: /Library/LaunchDaemons/com.saltstack.salt.master.plist
     - source: https://raw.githubusercontent.com/saltstack/salt/master/pkg/osx/scripts/com.saltstack.salt.master.plist
     - source_hash: {{ salt_settings.salt_master_macos_plist_hash }}
-    - retry:
-        attempts: 2
-        until: True
-        interval: 10
-        splay: 10
+    - retry: {{ salt_settings.retry_options | json }}
     - require_in:
       - service: salt-master
     {%- endif %}
@@ -51,11 +47,16 @@ salt-master:
     - source: salt://{{ tplroot }}/files/master.d
     {%- endif %}
     - clean: {{ salt_settings.clean_config_d_dir }}
-    - exclude_pat: _*
+    - exclude_pat:
+      - _*
+      - raas.conf
     {% if salt_settings.master_service_details.state != 'ignore' %}
   service.{{ salt_settings.master_service_details.state }}:
     - enable: {{ salt_settings.master_service_details.enabled }}
     - name: {{ salt_settings.master_service }}
+    {%- if grains.os_family in ['FreeBSD', 'Gentoo'] %}
+    - retry: {{ salt_settings.retry_options | json }}
+    {%- endif %}
     - watch:
            {%- if grains.kernel|lower == 'darwin' %}
       - file: salt-master-macos
